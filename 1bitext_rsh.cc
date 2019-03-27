@@ -33,6 +33,7 @@
 #include "utils.hpp"
 #include "irreps.h"
 #include "1bitext_rsh.h"
+
 #ifndef NO_DEBUG
 #include "debug.h"
 #endif
@@ -147,7 +148,7 @@ printf("l=%lu, r=%lu, n=%lu, log(n)=%Lf, log(2/err)=%f\n", l, r, pp.n, log2((lon
 // for this small amount of code.
 BIGNUM *bitext_rsh::horner_poly_gf2n(BIGNUM *x) {
 	BIGNUM *res; res = BN_new();
-	BIGNUM tmp; BN_init(&tmp);
+	BIGNUM *tmp; tmp = BN_new();
 	BN_zero(res);
 
 	 // TODO: Ideally, This should be moved to the per-thread initialisation
@@ -160,11 +161,12 @@ BIGNUM *bitext_rsh::horner_poly_gf2n(BIGNUM *x) {
 	  
 	 size_t len = (coeffs.size()-1);  // use if you want to reverse the coeff order
 	for(size_t i = 0; i < coeffs.size(); i++) {	// reverse coeffs oder for Horners Rule
-		BN_GF2m_mod_mul_arr(&tmp, res, x, irred_poly, ctx);	// tmp = (res*x) mod irred_poly
-		BN_GF2m_add(res, &tmp, coeffs[len-i]);						// res = tmp + coeffs[i]
+		BN_GF2m_mod_mul_arr(tmp, res, x, irred_poly, ctx);	// tmp = (res*x) mod irred_poly
+		BN_GF2m_add(res, tmp, coeffs[len-i]);						// res = tmp + coeffs[i]
 	}
 
 	BN_CTX_free(ctx);
+        BN_free(tmp);
 	return res;
 }
 #endif
@@ -367,8 +369,10 @@ bool bitext_rsh::extract(void *sub_seed_a, void *sub_seed_b) {	// separated sub-
 	data = (data_t *) &re_res_byte_conv;
 	data_len =  (chars_per_half+3)/4; // len in 4-Byte words, round up to next 4 Bytes
 #else
-	data = reinterpret_cast<BN_ULONG*>(rs_res->d);
-	data_len = rs_res->dmax;
+        unsigned char *dbytes = new unsigned char[BN_num_bytes(rs_res)];
+        BN_bn2bin(rs_res, dbytes);
+	data = reinterpret_cast<BN_ULONG*>(dbytes);
+	data_len = ceil((float)BN_num_bytes(rs_res)*8/BN_BITS2);
 #endif
 
 		// global_rand changed to inital_rand

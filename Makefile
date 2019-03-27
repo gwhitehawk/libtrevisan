@@ -70,24 +70,25 @@ all.objects = $(objects) $(objects.ext) $(objects.r)
 headers = 1bitext.h debug.h timing.h weakdes_gf2x.h weakdes_gfp.h  \
 	  utils.hpp weakdes.h bitfield.hpp prng.hpp 1bitext_rsh.h primitives.h stream_ops.h
 platform=$(shell uname)
- INCDIRS=-I../bin/include
- INCDIRS+=-I../lib/openssl-1.0.1e/include
- INCDIRS+=-I../bin/include/NTL/ntl-6.0.0/include
- INCDIRS+=-I../lib/gf2x-1.1/include
- INCDIRS+=-I/opt/local/include
+ INCDIRS=-I/usr/bin/include
+ INCDIRS+=-I/usr/include/openssl/
+ INCDIRS+=-I/usr/local/include/gf2x
+ INCDIRS+=-I/usr/local/include/NTL
+ INCDIRS+=-I/usr/local/include/tclap
 
- LIBDIRS=-L/opt/local/lib
- LIBDIRS+=-L../lib/openssl-1.0.1e
- LIBDIRS+=-L../bin/include/lib
- LIBDIRS+=-L../lib/gf2x-1.1/lib
- LIBDIRS+=-L../bin/include/NTL/ntl-6.0.0/src
+ LIBDIRS=-L/usr/local/lib
+ LIBDIRS+=-L/usr/lib/x86_64-linux-gnu
+ LIBDIRS+=-L/usr/lib/x86_64-linux-gnu/openssl-1.0.2
+ LIBDIRS+=-L/usr/local/lib/include/gf2x
+ LIBDIRS+=-L/usr/local/src/NTL/ntl-9.4.0
  CXXFLAGS=$(OPTIMISE) $(OPENMP) $(DEBUG) $(VARIANTS) $(INCDIRS)
+
 
 ifeq ($(HAVE_SSE4),y)
 CXXFLAGS+=-msse4.2 -DHAVE_SSE4
 endif
 
-LIBS=-lgmp -lm -lntl -lssl -lcrypto
+LIBS=-lgmp -lm -lntl -lssl -lcrypto -lpthread
 
 ifeq ($(HAVE_GF2X),y)
 LIBS+= -lgf2x
@@ -100,6 +101,7 @@ else
 CXXFLAGS+=-std=c++11
 CXX=g++-mp-4.7
 endif
+
 
 # # Cache the flags derived from R because they do not change across make invocations
 # .rcxxflags:
@@ -123,7 +125,7 @@ endif
 	
 gen_irreps: gen_irreps.cc
 	@echo "Creating gen_irreps" 
-	$(CXX) $(INCDIRS) $(LIBDIRS) gen_irreps.cc -g -o gen_irreps -lntl -lgf2x 
+	$(CXX) $(INCDIRS) $(LIBDIRS) gen_irreps.cc -g -o gen_irreps -lntl -lgf2x -lpthread -lgmp 
 
 generated/irreps_ntl.o generated/irreps_ossl.o: gen_irreps
 	@echo "Creating generated/...."
